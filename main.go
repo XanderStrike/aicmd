@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -92,8 +93,8 @@ func main() {
 			// Execute the command
 			cmd := exec.Command("bash", "-c", command)
 			var stdout, stderr bytes.Buffer
-			cmd.Stdout = &stdout
-			cmd.Stderr = &stderr
+			cmd.Stdout = io.MultiWriter(os.Stdout, &stdout)
+			cmd.Stderr = io.MultiWriter(os.Stderr, &stderr)
 			err := cmd.Run()
 
 			// Check the exit code of the command
@@ -113,7 +114,7 @@ func main() {
 					resp, err := client.CreateChatCompletion(
 						context.Background(),
 						openai.ChatCompletionRequest{
-							Model:    openai.GPT3Dot5Turbo,
+							Model:    openai.GPT4o,
 							Messages: messages,
 						},
 					)
