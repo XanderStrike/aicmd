@@ -24,6 +24,11 @@ Size: 15M
   → ./uploads/demo_video.mp4
 ```
 
+## pre-built binaries
+
+Pre-built binaries are available for Linux (AMD64/ARM64) and macOS (ARM64) on the [releases page](https://github.com/XanderStrike/aicmd/releases).
+
+
 ## building
 
 1. **Install Go**: Make sure Go is installed. [Download it here](https://go.dev/dl/).
