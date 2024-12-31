@@ -103,7 +103,7 @@ func (c *OllamaClient) GenerateCompletion(ctx context.Context, messages []openai
 	}
 
 	// Use a scanner to read the streaming response line by line
-	var lastResponse OllamaResponse
+	var fullContent strings.Builder
 	scanner := bufio.NewScanner(resp.Body)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -116,9 +116,14 @@ func (c *OllamaClient) GenerateCompletion(ctx context.Context, messages []openai
 			return "", fmt.Errorf("error decoding response line: %v\nLine: %s", err, line)
 		}
 		
-		// Keep track of the last non-empty response
+		// Accumulate the content
 		if response.Message.Content != "" {
-			lastResponse = response
+			fullContent.WriteString(response.Message.Content)
+		}
+
+		// If we get a done message, we can stop
+		if response.Done {
+			break
 		}
 	}
 
@@ -126,11 +131,12 @@ func (c *OllamaClient) GenerateCompletion(ctx context.Context, messages []openai
 		return "", fmt.Errorf("error reading response stream: %v", err)
 	}
 
-	if lastResponse.Message.Content == "" {
+	result := fullContent.String()
+	if result == "" {
 		return "", fmt.Errorf("no valid response received from Ollama API")
 	}
 
-	return lastResponse.Message.Content, nil
+	return result, nil
 }
 
 func getClient() (Client, error) {
