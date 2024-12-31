@@ -289,6 +289,21 @@ func main() {
 				fmt.Printf("Error executing command: %v\n", err)
 				continue
 			}
+
+			// Prompt user about adding output to context
+			color.HiCyan("\nAdd command output to conversation context? [y/N]: ")
+			contextResponse, _ := reader.ReadString('\n')
+			contextResponse = strings.ToLower(strings.TrimSpace(contextResponse))
+
+			if contextResponse == "y" || contextResponse == "yes" {
+				outputContext := fmt.Sprintf("Command output:\n%s", stdout.String())
+				messages = append(messages, openai.ChatCompletionMessage{
+					Role:    openai.ChatMessageRoleUser,
+					Content: outputContext,
+				})
+				color.Green("Output added to conversation context")
+			}
+
 			// Continue to next iteration after successful command
 			continue
 		}
