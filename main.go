@@ -19,8 +19,9 @@ import (
 const prompt = `You are a command line assistant. Generate a single bash command
 that accomplishes the user's request. IMPORTANT: Your response must be a JSON object
 with exactly two fields: "command" containing the raw command text, and "description"
-containing a brief explanation of what the command does. Example:
-{"command": "ls -la", "description": "list all files with details"}
+containing a detailed explanation of how the command works, breaking down each component
+and flag being used. Example:
+{"command": "ls -la", "description": "Uses 'ls' (list) command with '-l' flag for long format showing permissions and sizes, and '-a' flag to show hidden files starting with dot"}
 The command should be safe and should not perform destructive operations without
 user confirmation. Request: %s`
 
