@@ -169,7 +169,10 @@ func main() {
 		fmt.Printf("generated command: %s\n\n", command)
 
 		// Add assistant's response to message history
-		messages = append(messages, resp.Choices[0].Message)
+		messages = append(messages, openai.ChatCompletionMessage{
+			Role:    openai.ChatMessageRoleAssistant,
+			Content: command,
+		})
 
 		// Ask for confirmation with follow-up option
 		fmt.Print("run it now? [Y/n/f for fix]: ")
