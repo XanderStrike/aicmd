@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/fatih/color"
 	"io"
 	"os"
 	"os/exec"
@@ -228,7 +229,14 @@ func main() {
 		}
 
 		command := strings.TrimSpace(cmdResponse.Command)
-		fmt.Printf("Command: %s\nDescription: %s\n\n", command, cmdResponse.Description)
+		
+		// Print with colors
+		color.Blue("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+		color.Green("▶ Command:")
+		color.Yellow("  %s", command)
+		color.Green("\n▶ Description:")
+		color.White("  %s", cmdResponse.Description)
+		color.Blue("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
 
 		// Add assistant's response to message history
 		messages = append(messages, openai.ChatCompletionMessage{
@@ -237,7 +245,7 @@ func main() {
 		})
 
 		// Ask for confirmation with follow-up option
-		fmt.Print("run it now? [Y/n/f for fix]: ")
+		color.HiCyan("Run it now? [Y/n/f for fix]: ")
 		reader := bufio.NewReader(os.Stdin)
 		response, _ := reader.ReadString('\n')
 		response = strings.ToLower(strings.TrimSpace(response))
