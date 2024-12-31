@@ -10,9 +10,10 @@ import (
 	"os/exec"
 	"strings"
 
-	openai "github.com/sashabaranov/go-openai"
-	"net/http"
 	"encoding/json"
+	"net/http"
+
+	openai "github.com/sashabaranov/go-openai"
 )
 
 const prompt = `You are a command line assistant. Generate a single bash command
