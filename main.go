@@ -253,6 +253,7 @@ func main() {
 		if response == "f" {
 			continue
 		} else if response == "" || response == "y" || response == "yes" {
+		executeCommand:
 			// Execute the command
 			cmd := exec.Command("bash", "-c", command)
 			var stdout, stderr bytes.Buffer
@@ -280,9 +281,31 @@ func main() {
 						continue
 					}
 
-					// Display the AI's response
-					fixedCommand := strings.TrimSpace(completion)
-					fmt.Printf("AI suggested fix: %s\n\n", fixedCommand)
+					// Parse the JSON response for the fix
+					var fixResponse CommandResponse
+					if err := json.Unmarshal([]byte(completion), &fixResponse); err != nil {
+						fmt.Printf("Error parsing fix response: %v\n", err)
+						continue
+					}
+
+					// Display the fix with colors
+					color.Blue("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+					color.Red("⚠ Previous command failed. Here's the suggested fix:")
+					color.Green("▶ Fixed Command:")
+					color.Yellow("  %s", fixResponse.Command)
+					color.Green("\n▶ Explanation:")
+					color.White("  %s", fixResponse.Description)
+					color.Blue("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+
+					// Ask to run the fixed command
+					color.HiCyan("Run the fixed command? [Y/n]: ")
+					fixResponse, _ := reader.ReadString('\n')
+					fixResponse = strings.ToLower(strings.TrimSpace(fixResponse))
+
+					if fixResponse == "" || fixResponse == "y" || fixResponse == "yes" {
+						command = strings.TrimSpace(fixResponse.Command)
+						goto executeCommand
+					}
 					continue
 				}
 			} else if err != nil {
