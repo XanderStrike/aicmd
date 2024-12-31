@@ -11,6 +11,8 @@ import (
 	"strings"
 
 	openai "github.com/sashabaranov/go-openai"
+	"net/http"
+	"encoding/json"
 )
 
 const prompt = `You are a command line assistant. Generate a single bash command
@@ -18,21 +20,116 @@ that accomplishes the user's request.  Only output the command itself, no
 explanation or markdown formatting.  The command should be safe and should not
 perform destructive operations without user confirmation.  Request: %s`
 
+type OllamaRequest struct {
+	Model    string    `json:"model"`
+	Messages []Message `json:"messages"`
+}
+
+type Message struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+type OllamaResponse struct {
+	Message Message `json:"message"`
+}
+
+type Client interface {
+	GenerateCompletion(ctx context.Context, messages []openai.ChatCompletionMessage) (string, error)
+}
+
+type OpenAIClient struct {
+	client *openai.Client
+}
+
+func (c *OpenAIClient) GenerateCompletion(ctx context.Context, messages []openai.ChatCompletionMessage) (string, error) {
+	resp, err := c.client.CreateChatCompletion(
+		ctx,
+		openai.ChatCompletionRequest{
+			Model:    openai.GPT3Dot5Turbo,
+			Messages: messages,
+		},
+	)
+	if err != nil {
+		return "", err
+	}
+	return resp.Choices[0].Message.Content, nil
+}
+
+type OllamaClient struct {
+	baseURL string
+	model   string
+}
+
+func (c *OllamaClient) GenerateCompletion(ctx context.Context, messages []openai.ChatCompletionMessage) (string, error) {
+	// Convert OpenAI messages to Ollama format
+	ollamaMessages := make([]Message, len(messages))
+	for i, msg := range messages {
+		ollamaMessages[i] = Message{
+			Role:    msg.Role,
+			Content: msg.Content,
+		}
+	}
+
+	reqBody := OllamaRequest{
+		Model:    c.model,
+		Messages: ollamaMessages,
+	}
+
+	jsonData, err := json.Marshal(reqBody)
+	if err != nil {
+		return "", err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+"/api/chat", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	var ollamaResp OllamaResponse
+	if err := json.NewDecoder(resp.Body).Decode(&ollamaResp); err != nil {
+		return "", err
+	}
+
+	return ollamaResp.Message.Content, nil
+}
+
+func getClient() (Client, error) {
+	if ollamaBase := os.Getenv("OLLAMA_API_BASE"); ollamaBase != "" {
+		if model := os.Getenv("OLLAMA_MODEL"); model != "" {
+			return &OllamaClient{
+				baseURL: ollamaBase,
+				model:   model,
+			}, nil
+		}
+	}
+
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey == "" {
+		return nil, fmt.Errorf("neither Ollama nor OpenAI configuration found")
+	}
+	return &OpenAIClient{client: openai.NewClient(apiKey)}, nil
+}
+
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("Usage: aicmd \"your command description\"")
 		os.Exit(1)
 	}
 
-	// Get OpenAI API key from environment
-	apiKey := os.Getenv("OPENAI_API_KEY")
-	if apiKey == "" {
-		fmt.Println("Error: OPENAI_API_KEY environment variable not set")
+	// Initialize AI client
+	client, err := getClient()
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
-
-	// Initialize OpenAI client
-	client := openai.NewClient(apiKey)
 
 	// Keep track of conversation history
 	messages := []openai.ChatCompletionMessage{}
@@ -61,21 +158,14 @@ func main() {
 			Content: fmt.Sprintf(prompt, userRequest),
 		})
 
-		// Create completion request with full message history
-		resp, err := client.CreateChatCompletion(
-			context.Background(),
-			openai.ChatCompletionRequest{
-				Model:    openai.GPT3Dot5Turbo,
-				Messages: messages,
-			},
-		)
-
+		// Generate completion with full message history
+		completion, err := client.GenerateCompletion(context.Background(), messages)
 		if err != nil {
 			fmt.Printf("Error generating command: %v\n", err)
 			continue
 		}
 
-		command := strings.TrimSpace(resp.Choices[0].Message.Content)
+		command := strings.TrimSpace(completion)
 		fmt.Printf("generated command: %s\n\n", command)
 
 		// Add assistant's response to message history
@@ -110,22 +200,15 @@ func main() {
 						Content: fmt.Sprintf("The command failed with the following output:\n%s\nPlease explain the error and provide a fixed command.", errorMessage),
 					})
 
-					// Create completion request with error message
-					resp, err := client.CreateChatCompletion(
-						context.Background(),
-						openai.ChatCompletionRequest{
-							Model:    openai.GPT4o,
-							Messages: messages,
-						},
-					)
-
+					// Generate completion with error message
+					completion, err := client.GenerateCompletion(context.Background(), messages)
 					if err != nil {
 						fmt.Printf("Error generating fix: %v\n", err)
 						continue
 					}
 
 					// Display the AI's response
-					fixedCommand := strings.TrimSpace(resp.Choices[0].Message.Content)
+					fixedCommand := strings.TrimSpace(completion)
 					fmt.Printf("AI suggested fix: %s\n\n", fixedCommand)
 					continue
 				}
