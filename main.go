@@ -289,8 +289,8 @@ func main() {
 				fmt.Printf("Error executing command: %v\n", err)
 				continue
 			}
-			// Exit if the command runs successfully
-			return
+			// Continue to next iteration after successful command
+			continue
 		}
 	}
 }
