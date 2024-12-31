@@ -170,6 +170,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Announce which service is being used
+	switch c := client.(type) {
+	case *OllamaClient:
+		fmt.Printf("Using Ollama with model: %s\n", c.model)
+	case *OpenAIClient:
+		fmt.Printf("Using OpenAI with model: %s\n", openai.GPT3Dot5Turbo)
+	}
+
 	// Keep track of conversation history
 	messages := []openai.ChatCompletionMessage{}
 
