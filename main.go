@@ -32,7 +32,10 @@ type Message struct {
 }
 
 type OllamaResponse struct {
-	Message Message `json:"message"`
+	Model     string  `json:"model"`
+	Created   int64   `json:"created_at"`
+	Message   Message `json:"message"`
+	Done      bool    `json:"done"`
 }
 
 type Client interface {
@@ -94,9 +97,22 @@ func (c *OllamaClient) GenerateCompletion(ctx context.Context, messages []openai
 	}
 	defer resp.Body.Close()
 
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("error reading response body: %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
 	var ollamaResp OllamaResponse
-	if err := json.NewDecoder(resp.Body).Decode(&ollamaResp); err != nil {
-		return "", err
+	if err := json.Unmarshal(body, &ollamaResp); err != nil {
+		return "", fmt.Errorf("error decoding response: %v\nBody: %s", err, string(body))
+	}
+
+	if ollamaResp.Message.Content == "" {
+		return "", fmt.Errorf("empty response from Ollama API: %s", string(body))
 	}
 
 	return ollamaResp.Message.Content, nil
