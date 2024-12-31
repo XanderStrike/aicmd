@@ -1,6 +1,6 @@
 # aicmd
 
-use openai to generate swanky bash one-liners 
+use AI to generate swanky bash one-liners (supports both OpenAI and Ollama!)
 
 ## usage
 
@@ -28,6 +28,21 @@ Size: 15M
 
 Pre-built binaries are available for Linux (AMD64/ARM64) and macOS (ARM64) on the [releases page](https://github.com/XanderStrike/aicmd/releases).
 
+### with OpenAI:
+
+```bash
+export OPENAI_API_KEY="your-api-key"
+aicmd "find duplicate files"
+```
+
+
+### with Ollama:
+
+```bash
+export OLLAMA_API_BASE="http://localhost:11434"
+export OLLAMA_MODEL="mistral"  # or any other model you've pulled
+aicmd "find duplicate files"
+```
 
 ## building
 
@@ -40,10 +55,17 @@ Pre-built binaries are available for Linux (AMD64/ARM64) and macOS (ARM64) on th
    cd <repo-directory>
    ```
 
-3. **Set API Key**: Add your OpenAI API key to your environment.
+3. **Set API Key**: Choose your AI provider:
 
+   For OpenAI:
    ```bash
    export OPENAI_API_KEY="your-api-key"
+   ```
+
+   For Ollama:
+   ```bash
+   export OLLAMA_API_BASE="http://localhost:11434"
+   export OLLAMA_MODEL="mistral"  # or whatever model you prefer
    ```
 
 4. **Build**: Run the build command.
