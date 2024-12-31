@@ -97,25 +97,40 @@ func (c *OllamaClient) GenerateCompletion(ctx context.Context, messages []openai
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("error reading response body: %v", err)
-	}
-
 	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
 		return "", fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
-	var ollamaResp OllamaResponse
-	if err := json.Unmarshal(body, &ollamaResp); err != nil {
-		return "", fmt.Errorf("error decoding response: %v\nBody: %s", err, string(body))
+	// Use a scanner to read the streaming response line by line
+	var lastResponse OllamaResponse
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "" {
+			continue
+		}
+
+		var response OllamaResponse
+		if err := json.Unmarshal([]byte(line), &response); err != nil {
+			return "", fmt.Errorf("error decoding response line: %v\nLine: %s", err, line)
+		}
+		
+		// Keep track of the last non-empty response
+		if response.Message.Content != "" {
+			lastResponse = response
+		}
 	}
 
-	if ollamaResp.Message.Content == "" {
-		return "", fmt.Errorf("empty response from Ollama API: %s", string(body))
+	if err := scanner.Err(); err != nil {
+		return "", fmt.Errorf("error reading response stream: %v", err)
 	}
 
-	return ollamaResp.Message.Content, nil
+	if lastResponse.Message.Content == "" {
+		return "", fmt.Errorf("no valid response received from Ollama API")
+	}
+
+	return lastResponse.Message.Content, nil
 }
 
 func getClient() (Client, error) {
