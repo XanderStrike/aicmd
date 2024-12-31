@@ -17,9 +17,10 @@ import (
 )
 
 const prompt = `You are a command line assistant. Generate a single bash command
-that accomplishes the user's request.  Only output the command itself, no
-explanation or markdown formatting.  The command should be safe and should not
-perform destructive operations without user confirmation.  Request: %s`
+that accomplishes the user's request. IMPORTANT: Your response must contain ONLY
+the raw command text - no backticks, no markdown formatting, no code blocks, no
+explanation, no extra whitespace. The command should be safe and should not
+perform destructive operations without user confirmation. Request: %s`
 
 type OllamaRequest struct {
 	Model    string    `json:"model"`
