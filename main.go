@@ -17,10 +17,12 @@ import (
 )
 
 const prompt = `You are a command line assistant. Generate a single bash command
-that accomplishes the user's request. IMPORTANT: Your response must contain ONLY
-the raw command text - no backticks, no markdown formatting, no code blocks, no
-explanation, no extra whitespace. The command should be safe and should not
-perform destructive operations without user confirmation. Request: %s`
+that accomplishes the user's request. IMPORTANT: Your response must be a JSON object
+with exactly two fields: "command" containing the raw command text, and "description"
+containing a brief explanation of what the command does. Example:
+{"command": "ls -la", "description": "list all files with details"}
+The command should be safe and should not perform destructive operations without
+user confirmation. Request: %s`
 
 type OllamaRequest struct {
 	Model    string    `json:"model"`
@@ -30,6 +32,11 @@ type OllamaRequest struct {
 type Message struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
+}
+
+type CommandResponse struct {
+	Command     string `json:"command"`
+	Description string `json:"description"`
 }
 
 type OllamaResponse struct {
@@ -212,8 +219,15 @@ func main() {
 			continue
 		}
 
-		command := strings.TrimSpace(completion)
-		fmt.Printf("generated command: %s\n\n", command)
+		// Parse the JSON response
+		var cmdResponse CommandResponse
+		if err := json.Unmarshal([]byte(completion), &cmdResponse); err != nil {
+			fmt.Printf("Error parsing response: %v\n", err)
+			continue
+		}
+
+		command := strings.TrimSpace(cmdResponse.Command)
+		fmt.Printf("Command: %s\nDescription: %s\n\n", command, cmdResponse.Description)
 
 		// Add assistant's response to message history
 		messages = append(messages, openai.ChatCompletionMessage{
