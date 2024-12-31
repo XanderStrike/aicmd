@@ -17,8 +17,8 @@ import (
 )
 
 const prompt = `You are a command line assistant. Generate a single bash command
-that accomplishes the user's request. IMPORTANT: Your response must be a JSON object
-with exactly two fields: "command" containing the raw command text, and "description"
+that accomplishes the user's request. IMPORTANT: Your response must be a JSON object that can be directly parsed, no markdown or styling at all. Escape quotes in the json so that it can be parsed correctly.
+The json must have exactly two fields: "command" containing the raw command text, and "description"
 containing a detailed explanation of how the command works, breaking down each component
 and flag being used. Example:
 {"command": "ls -la", "description": "Uses 'ls' (list) command with '-l' flag for long format showing permissions and sizes, and '-a' flag to show hidden files starting with dot"}
@@ -41,10 +41,10 @@ type CommandResponse struct {
 }
 
 type OllamaResponse struct {
-	Model     string  `json:"model"`
-	Created   string  `json:"created_at"`
-	Message   Message `json:"message"`
-	Done      bool    `json:"done"`
+	Model   string  `json:"model"`
+	Created string  `json:"created_at"`
+	Message Message `json:"message"`
+	Done    bool    `json:"done"`
 }
 
 type Client interface {
@@ -59,7 +59,7 @@ func (c *OpenAIClient) GenerateCompletion(ctx context.Context, messages []openai
 	resp, err := c.client.CreateChatCompletion(
 		ctx,
 		openai.ChatCompletionRequest{
-			Model:    openai.GPT3Dot5Turbo,
+			Model:    openai.GPT4o,
 			Messages: messages,
 		},
 	)
@@ -124,7 +124,7 @@ func (c *OllamaClient) GenerateCompletion(ctx context.Context, messages []openai
 		if err := json.Unmarshal([]byte(line), &response); err != nil {
 			return "", fmt.Errorf("error decoding response line: %v\nLine: %s", err, line)
 		}
-		
+
 		// Accumulate the content
 		if response.Message.Content != "" {
 			fullContent.WriteString(response.Message.Content)
@@ -183,7 +183,7 @@ func main() {
 	case *OllamaClient:
 		fmt.Printf("Using Ollama with model: %s\n", c.model)
 	case *OpenAIClient:
-		fmt.Printf("Using OpenAI with model: %s\n", openai.GPT3Dot5Turbo)
+		fmt.Printf("Using OpenAI with model: %s\n", openai.GPT4o)
 	}
 
 	// Keep track of conversation history
@@ -223,7 +223,7 @@ func main() {
 		// Parse the JSON response
 		var cmdResponse CommandResponse
 		if err := json.Unmarshal([]byte(completion), &cmdResponse); err != nil {
-			fmt.Printf("Error parsing response: %v\n", err)
+			fmt.Printf("Error parsing response: %v\nResponse: %s\n", err, completion)
 			continue
 		}
 
