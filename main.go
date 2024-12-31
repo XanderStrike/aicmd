@@ -33,7 +33,7 @@ type Message struct {
 
 type OllamaResponse struct {
 	Model     string  `json:"model"`
-	Created   int64   `json:"created_at"`
+	Created   string  `json:"created_at"`
 	Message   Message `json:"message"`
 	Done      bool    `json:"done"`
 }
