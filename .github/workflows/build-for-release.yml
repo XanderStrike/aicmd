@@ -20,15 +20,15 @@ jobs:
 
       - name: Build Linux AMD64
         run: |
-          GOOS=linux GOARCH=amd64 go build -o aicmd-linux-amd64 main.go
+          GOOS=linux GOARCH=amd64 go build -o aicmd-linux-amd64 main.go ollama_client.go
 
       - name: Build Linux ARM64
         run: |
-          GOOS=linux GOARCH=arm64 go build -o aicmd-linux-arm64 main.go
+          GOOS=linux GOARCH=arm64 go build -o aicmd-linux-arm64 main.go ollama_client.go
 
       - name: Build macOS ARM64 (Apple Silicon)
         run: |
-          GOOS=darwin GOARCH=arm64 go build -o aicmd-darwin-arm64 main.go
+          GOOS=darwin GOARCH=arm64 go build -o aicmd-darwin-arm64 main.go ollama_client.go
   
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v1
