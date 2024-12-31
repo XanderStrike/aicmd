@@ -299,10 +299,10 @@ func main() {
 
 					// Ask to run the fixed command
 					color.HiCyan("Run the fixed command? [Y/n]: ")
-					fixResponse, _ := reader.ReadString('\n')
-					fixResponse = strings.ToLower(strings.TrimSpace(fixResponse))
+					fixUserResponse, _ := reader.ReadString('\n')
+					fixUserResponse = strings.ToLower(strings.TrimSpace(fixUserResponse))
 
-					if fixResponse == "" || fixResponse == "y" || fixResponse == "yes" {
+					if fixUserResponse == "" || fixUserResponse == "y" || fixUserResponse == "yes" {
 						command = strings.TrimSpace(fixResponse.Command)
 						goto executeCommand
 					}
