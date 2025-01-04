@@ -37,81 +37,50 @@ type Client interface {
 }
 
 
-func getClient(forceOpenAI bool, forceOllama bool, model string) (Client, error) {
-	if forceOpenAI && forceOllama {
-		return nil, fmt.Errorf("cannot force multiple AI providers at the same time")
-	}
-
-	// Try Anthropic if forced or if ANTHROPIC_API_KEY is set
-	if apiKey := os.Getenv("ANTHROPIC_API_KEY"); apiKey != "" {
+func getClient(provider string, model string) (Client, error) {
+	switch {
+	case os.Getenv(ProviderAnthropicKey) != "":
 		return &AnthropicClient{
-			apiKey: apiKey,
-			model:  model,
+			apiKey: os.Getenv(ProviderAnthropicKey),
+			model:  firstNonEmpty(model, ProviderAnthropicDefault),
 		}, nil
-	}
 
-	if forceOpenAI {
-		apiKey := os.Getenv("OPENAI_API_KEY")
+	case provider == "openai" || os.Getenv(ProviderOpenAIKey) != "":
+		apiKey := os.Getenv(ProviderOpenAIKey)
 		if apiKey == "" {
 			return nil, fmt.Errorf("OpenAI API key not found in environment")
 		}
 		return &OpenAIClient{
 			client: openai.NewClient(apiKey),
-			model:  model,
+			model:  firstNonEmpty(model, ProviderOpenAIDefault),
 		}, nil
-	}
 
-	if forceOllama {
-		ollamaBase := os.Getenv("OLLAMA_API_BASE")
-		if ollamaBase == "" {
-			return nil, fmt.Errorf("OLLAMA_API_BASE not found in environment")
-		}
-		ollamaModel := model
-		if ollamaModel == "" {
-			ollamaModel = os.Getenv("OLLAMA_MODEL")
-			if ollamaModel == "" {
-				return nil, fmt.Errorf("no model specified and OLLAMA_MODEL not found in environment")
-			}
+	case provider == "ollama" || os.Getenv(ProviderOllamaBase) != "":
+		baseURL := os.Getenv(ProviderOllamaBase)
+		if baseURL == "" {
+			return nil, fmt.Errorf("Ollama API base URL not found in environment")
 		}
 		return &OllamaClient{
-			baseURL: ollamaBase,
-			model:   ollamaModel,
+			baseURL: baseURL,
+			model:   firstNonEmpty(model, os.Getenv("OLLAMA_MODEL"), ProviderOllamaDefault),
 		}, nil
 	}
 
-	// Default behavior: try Ollama first, then OpenAI
-	if ollamaBase := os.Getenv("OLLAMA_API_BASE"); ollamaBase != "" {
-		ollamaModel := model
-		if ollamaModel == "" {
-			ollamaModel = os.Getenv("OLLAMA_MODEL")
-			if ollamaModel != "" {
-				return &OllamaClient{
-					baseURL: ollamaBase,
-					model:   ollamaModel,
-				}, nil
-			}
-		} else {
-			return &OllamaClient{
-				baseURL: ollamaBase,
-				model:   ollamaModel,
-			}, nil
+	return nil, fmt.Errorf("no valid AI provider configuration found")
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, v := range values {
+		if v != "" {
+			return v
 		}
 	}
-
-	apiKey := os.Getenv("OPENAI_API_KEY")
-	if apiKey == "" {
-		return nil, fmt.Errorf("neither Ollama nor OpenAI configuration found")
-	}
-	return &OpenAIClient{
-		client: openai.NewClient(apiKey),
-		model:  model,
-	}, nil
+	return ""
 }
 
 func main() {
-	forceOpenAI := flag.Bool("openai", false, "Force using OpenAI")
-	forceOllama := flag.Bool("ollama", false, "Force using Ollama")
-	model := flag.String("model", "", "Specify model to use (defaults to GPT-4 for OpenAI)")
+	provider := flag.String("provider", "", "AI provider to use (openai, ollama)")
+	model := flag.String("model", "", "Model to use (provider-specific)")
 	flag.Parse()
 
 	if len(flag.Args()) < 1 {
@@ -120,7 +89,7 @@ func main() {
 	}
 
 	// Initialize AI client
-	client, err := getClient(*forceOpenAI, *forceOllama, *model)
+	client, err := getClient(*provider, *model)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
