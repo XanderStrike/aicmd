@@ -159,7 +159,7 @@ func main() {
 		}
 		fmt.Printf("Using OpenAI with model: %s\n", modelName)
 	case *AnthropicClient:
-		modelName := "claude-3.5"
+		modelName := "claude-3-5-sonnet-latest"
 		if c.model != "" {
 			modelName = c.model
 		}

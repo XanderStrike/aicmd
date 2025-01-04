@@ -32,7 +32,7 @@ type AnthropicResponse struct {
 func (c *AnthropicClient) GenerateCompletion(ctx context.Context, messages []openai.ChatCompletionMessage) (string, error) {
 	model := c.model
 	if model == "" {
-		model = "claude-3.5"
+		model = "claude-3-5-sonnet-latest"
 	}
 
 	// Convert OpenAI messages to Anthropic format
