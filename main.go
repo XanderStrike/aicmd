@@ -62,7 +62,7 @@ func getClient(provider string, model string) (Client, error) {
 			model:  firstNonEmpty(model, ProviderOpenAIDefault),
 		}, nil
 
-	case provider == "ollama":
+	case "ollama":
 		baseURL := os.Getenv(ProviderOllamaBase)
 		if baseURL == "" {
 			return nil, fmt.Errorf("Ollama API base URL not found in environment variable %s", ProviderOllamaBase)
@@ -96,7 +96,7 @@ func main() {
 	}
 
 	// Initialize AI client
-	client, err := getClient(provider, *model)
+	client, err := getClient(*provider, *model)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
