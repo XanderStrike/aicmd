@@ -18,10 +18,6 @@ type OllamaRequest struct {
 	Messages []Message `json:"messages"`
 }
 
-type Message struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
 
 type OllamaResponse struct {
 	Model   string  `json:"model"`
