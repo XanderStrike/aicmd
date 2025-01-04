@@ -90,7 +90,7 @@ func main() {
 	}
 
 	// Initialize AI client
-	client, err := getClient(*provider, *model)
+	client, err := getClient(provider, *model)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
