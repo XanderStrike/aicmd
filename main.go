@@ -38,10 +38,6 @@ type Client interface {
 
 type OpenAIClient struct {
 	client *openai.Client
-}
-
-type OpenAIClient struct {
-	client *openai.Client
 	model  string
 }
 
