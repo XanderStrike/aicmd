@@ -40,11 +40,20 @@ type OpenAIClient struct {
 	client *openai.Client
 }
 
+type OpenAIClient struct {
+	client *openai.Client
+	model  string
+}
+
 func (c *OpenAIClient) GenerateCompletion(ctx context.Context, messages []openai.ChatCompletionMessage) (string, error) {
+	model := c.model
+	if model == "" {
+		model = openai.GPT4o
+	}
 	resp, err := c.client.CreateChatCompletion(
 		ctx,
 		openai.ChatCompletionRequest{
-			Model:    openai.GPT4o,
+			Model:    model,
 			Messages: messages,
 		},
 	)
@@ -64,7 +73,10 @@ func getClient(forceOpenAI bool, forceOllama bool, model string) (Client, error)
 		if apiKey == "" {
 			return nil, fmt.Errorf("OpenAI API key not found in environment")
 		}
-		return &OpenAIClient{client: openai.NewClient(apiKey)}, nil
+		return &OpenAIClient{
+			client: openai.NewClient(apiKey),
+			model:  model,
+		}, nil
 	}
 
 	if forceOllama {
@@ -108,7 +120,10 @@ func getClient(forceOpenAI bool, forceOllama bool, model string) (Client, error)
 	if apiKey == "" {
 		return nil, fmt.Errorf("neither Ollama nor OpenAI configuration found")
 	}
-	return &OpenAIClient{client: openai.NewClient(apiKey)}, nil
+	return &OpenAIClient{
+		client: openai.NewClient(apiKey),
+		model:  model,
+	}, nil
 }
 
 func main() {
@@ -134,7 +149,11 @@ func main() {
 	case *OllamaClient:
 		fmt.Printf("Using Ollama with model: %s\n", c.model)
 	case *OpenAIClient:
-		fmt.Printf("Using OpenAI with model: %s\n", openai.GPT4o)
+		modelName := openai.GPT4o
+		if c.model != "" {
+			modelName = c.model
+		}
+		fmt.Printf("Using OpenAI with model: %s\n", modelName)
 	}
 
 	// Keep track of conversation history
