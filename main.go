@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"flag"
 
 	"github.com/fatih/color"
 
@@ -53,12 +54,52 @@ func (c *OpenAIClient) GenerateCompletion(ctx context.Context, messages []openai
 	return resp.Choices[0].Message.Content, nil
 }
 
-func getClient() (Client, error) {
+func getClient(forceOpenAI bool, forceOllama bool, model string) (Client, error) {
+	if forceOpenAI && forceOllama {
+		return nil, fmt.Errorf("cannot force both OpenAI and Ollama at the same time")
+	}
+
+	if forceOpenAI {
+		apiKey := os.Getenv("OPENAI_API_KEY")
+		if apiKey == "" {
+			return nil, fmt.Errorf("OpenAI API key not found in environment")
+		}
+		return &OpenAIClient{client: openai.NewClient(apiKey)}, nil
+	}
+
+	if forceOllama {
+		ollamaBase := os.Getenv("OLLAMA_API_BASE")
+		if ollamaBase == "" {
+			return nil, fmt.Errorf("OLLAMA_API_BASE not found in environment")
+		}
+		ollamaModel := model
+		if ollamaModel == "" {
+			ollamaModel = os.Getenv("OLLAMA_MODEL")
+			if ollamaModel == "" {
+				return nil, fmt.Errorf("no model specified and OLLAMA_MODEL not found in environment")
+			}
+		}
+		return &OllamaClient{
+			baseURL: ollamaBase,
+			model:   ollamaModel,
+		}, nil
+	}
+
+	// Default behavior: try Ollama first, then OpenAI
 	if ollamaBase := os.Getenv("OLLAMA_API_BASE"); ollamaBase != "" {
-		if model := os.Getenv("OLLAMA_MODEL"); model != "" {
+		ollamaModel := model
+		if ollamaModel == "" {
+			ollamaModel = os.Getenv("OLLAMA_MODEL")
+			if ollamaModel != "" {
+				return &OllamaClient{
+					baseURL: ollamaBase,
+					model:   ollamaModel,
+				}, nil
+			}
+		} else {
 			return &OllamaClient{
 				baseURL: ollamaBase,
-				model:   model,
+				model:   ollamaModel,
 			}, nil
 		}
 	}
@@ -71,13 +112,18 @@ func getClient() (Client, error) {
 }
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("Usage: aicmd \"your command description\"")
+	forceOpenAI := flag.Bool("openai", false, "Force using OpenAI")
+	forceOllama := flag.Bool("ollama", false, "Force using Ollama")
+	model := flag.String("model", "", "Specify model to use (defaults to GPT-4 for OpenAI)")
+	flag.Parse()
+
+	if len(flag.Args()) < 1 {
+		fmt.Println("Usage: aicmd [--openai|--ollama] [--model MODEL] \"your command description\"")
 		os.Exit(1)
 	}
 
 	// Initialize AI client
-	client, err := getClient()
+	client, err := getClient(*forceOpenAI, *forceOllama, *model)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
@@ -99,7 +145,7 @@ func main() {
 		var userRequest string
 		if len(messages) == 0 && len(os.Args) > 1 {
 			// First request comes from command line args
-			userRequest = strings.Join(os.Args[1:], " ")
+			userRequest = strings.Join(flag.Args(), " ")
 		} else {
 			// Subsequent requests come from stdin
 			fmt.Print("\nEnter follow-up request (or 'exit' to quit): ")
