@@ -61,7 +61,15 @@ func (c *OpenAIClient) GenerateCompletion(ctx context.Context, messages []openai
 
 func getClient(forceOpenAI bool, forceOllama bool, model string) (Client, error) {
 	if forceOpenAI && forceOllama {
-		return nil, fmt.Errorf("cannot force both OpenAI and Ollama at the same time")
+		return nil, fmt.Errorf("cannot force multiple AI providers at the same time")
+	}
+
+	// Try Anthropic if forced or if ANTHROPIC_API_KEY is set
+	if apiKey := os.Getenv("ANTHROPIC_API_KEY"); apiKey != "" {
+		return &AnthropicClient{
+			apiKey: apiKey,
+			model:  model,
+		}, nil
 	}
 
 	if forceOpenAI {
@@ -150,6 +158,12 @@ func main() {
 			modelName = c.model
 		}
 		fmt.Printf("Using OpenAI with model: %s\n", modelName)
+	case *AnthropicClient:
+		modelName := "claude-2"
+		if c.model != "" {
+			modelName = c.model
+		}
+		fmt.Printf("Using Anthropic with model: %s\n", modelName)
 	}
 
 	// Keep track of conversation history
