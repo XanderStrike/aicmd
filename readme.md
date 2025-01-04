@@ -1,6 +1,6 @@
 # aicmd
 
-use AI to generate swanky bash one-liners (supports both OpenAI and Ollama!)
+use AI to generate swanky bash one-liners (supports Anthropic, OpenAI, and Ollama!)
 
 ## usage
 
@@ -28,13 +28,19 @@ Size: 15M
 
 Pre-built binaries are available for Linux (AMD64/ARM64) and macOS (ARM64) on the [releases page](https://github.com/XanderStrike/aicmd/releases).
 
+### with Anthropic (default):
+
+```bash
+export ANTHROPIC_API_KEY="your-api-key"
+aicmd "find duplicate files"
+```
+
 ### with OpenAI:
 
 ```bash
 export OPENAI_API_KEY="your-api-key"
-aicmd "find duplicate files"
+aicmd --provider openai "find duplicate files"
 ```
-
 
 ### with Ollama:
 
@@ -57,6 +63,11 @@ aicmd "find duplicate files"
 
 3. **Set API Key**: Choose your AI provider:
 
+   For Anthropic (default):
+   ```bash
+   export ANTHROPIC_API_KEY="your-api-key"
+   ```
+
    For OpenAI:
    ```bash
    export OPENAI_API_KEY="your-api-key"
@@ -66,6 +77,13 @@ aicmd "find duplicate files"
    ```bash
    export OLLAMA_API_BASE="http://localhost:11434"
    export OLLAMA_MODEL="mistral"  # or whatever model you prefer
+   ```
+
+   You can also specify the provider explicitly with the `--provider` flag:
+   ```bash
+   aicmd --provider openai "your command"
+   aicmd --provider anthropic "your command"
+   aicmd --provider ollama "your command"
    ```
 
 4. **Build**: Run the build command.
