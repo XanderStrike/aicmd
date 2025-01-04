@@ -24,25 +24,22 @@ Size: 15M
   → ./uploads/demo_video.mp4
 ```
 
-## pre-built binaries
+## installing
 
-Pre-built binaries are available for Linux (AMD64/ARM64) and macOS (ARM64) on the [releases page](https://github.com/XanderStrike/aicmd/releases).
+Pre-built binaries are available for Linux (AMD64/ARM64) and macOS (ARM64) on the [releases page](https://github.com/XanderStrike/aicmd/releases). Download them and put them in your path or see below to build them.
 
-### with Anthropic (default):
+Set API keys must be set as environment variables, if multiple are set `aicmd` prefers anthropic, then openai, then ollama. You can also pass `--provider <anthropic|openai|ollama>` and `--model <whatever>`.
+
 
 ```bash
 export ANTHROPIC_API_KEY="your-api-key"
 aicmd "find duplicate files"
 ```
 
-### with OpenAI:
-
 ```bash
 export OPENAI_API_KEY="your-api-key"
-aicmd --provider openai "find duplicate files"
+aicmd "find duplicate files"
 ```
-
-### with Ollama:
 
 ```bash
 export OLLAMA_API_BASE="http://localhost:11434"

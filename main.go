@@ -38,42 +38,60 @@ type Client interface {
 
 
 func getClient(provider string, model string) (Client, error) {
-	// Try Anthropic first if no specific provider requested
-	if provider == "" || provider == "anthropic" {
-		if apiKey := os.Getenv(ProviderAnthropicKey); apiKey != "" {
-			return &AnthropicClient{
-				apiKey: apiKey,
-				model:  firstNonEmpty(model, ProviderAnthropicDefault),
-			}, nil
-		}
-		if provider == "anthropic" {
+	// If provider is explicitly specified, try only that one
+	if provider != "" {
+		switch provider {
+		case "anthropic":
+			if apiKey := os.Getenv(ProviderAnthropicKey); apiKey != "" {
+				return &AnthropicClient{
+					apiKey: apiKey,
+					model:  firstNonEmpty(model, ProviderAnthropicDefault),
+				}, nil
+			}
 			return nil, fmt.Errorf("Anthropic API key not found in environment variable %s", ProviderAnthropicKey)
+		case "openai":
+			if apiKey := os.Getenv(ProviderOpenAIKey); apiKey != "" {
+				return &OpenAIClient{
+					client: openai.NewClient(apiKey),
+					model:  firstNonEmpty(model, ProviderOpenAIDefault),
+				}, nil
+			}
+			return nil, fmt.Errorf("OpenAI API key not found in environment variable %s", ProviderOpenAIKey)
+		case "ollama":
+			if baseURL := os.Getenv(ProviderOllamaBase); baseURL != "" {
+				return &OllamaClient{
+					baseURL: baseURL,
+					model:   firstNonEmpty(model, os.Getenv("OLLAMA_MODEL"), ProviderOllamaDefault),
+				}, nil
+			}
+			return nil, fmt.Errorf("Ollama API base URL not found in environment variable %s", ProviderOllamaBase)
 		}
+		return nil, fmt.Errorf("unknown provider: %s", provider)
 	}
 
-	switch provider {
-	case "openai":
-		apiKey := os.Getenv(ProviderOpenAIKey)
-		if apiKey == "" {
-			return nil, fmt.Errorf("OpenAI API key not found in environment variable %s", ProviderOpenAIKey)
-		}
+	// Try providers in order: Anthropic -> OpenAI -> Ollama
+	if apiKey := os.Getenv(ProviderAnthropicKey); apiKey != "" {
+		return &AnthropicClient{
+			apiKey: apiKey,
+			model:  firstNonEmpty(model, ProviderAnthropicDefault),
+		}, nil
+	}
+
+	if apiKey := os.Getenv(ProviderOpenAIKey); apiKey != "" {
 		return &OpenAIClient{
 			client: openai.NewClient(apiKey),
 			model:  firstNonEmpty(model, ProviderOpenAIDefault),
 		}, nil
+	}
 
-	case "ollama":
-		baseURL := os.Getenv(ProviderOllamaBase)
-		if baseURL == "" {
-			return nil, fmt.Errorf("Ollama API base URL not found in environment variable %s", ProviderOllamaBase)
-		}
+	if baseURL := os.Getenv(ProviderOllamaBase); baseURL != "" {
 		return &OllamaClient{
 			baseURL: baseURL,
 			model:   firstNonEmpty(model, os.Getenv("OLLAMA_MODEL"), ProviderOllamaDefault),
 		}, nil
 	}
 
-	return nil, fmt.Errorf("no valid AI provider configuration found")
+	return nil, fmt.Errorf("no valid AI provider configuration found. Set ANTHROPIC_API_KEY, OPENAI_API_KEY, or OLLAMA_API_BASE")
 }
 
 func firstNonEmpty(values ...string) string {
