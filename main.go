@@ -45,20 +45,20 @@ func getClient(provider string, model string) (Client, error) {
 			model:  firstNonEmpty(model, ProviderAnthropicDefault),
 		}, nil
 
-	case provider == "openai" || os.Getenv(ProviderOpenAIKey) != "":
+	case provider == "openai":
 		apiKey := os.Getenv(ProviderOpenAIKey)
 		if apiKey == "" {
-			return nil, fmt.Errorf("OpenAI API key not found in environment")
+			return nil, fmt.Errorf("OpenAI API key not found in environment variable %s", ProviderOpenAIKey)
 		}
 		return &OpenAIClient{
 			client: openai.NewClient(apiKey),
 			model:  firstNonEmpty(model, ProviderOpenAIDefault),
 		}, nil
 
-	case provider == "ollama" || os.Getenv(ProviderOllamaBase) != "":
+	case provider == "ollama":
 		baseURL := os.Getenv(ProviderOllamaBase)
 		if baseURL == "" {
-			return nil, fmt.Errorf("Ollama API base URL not found in environment")
+			return nil, fmt.Errorf("Ollama API base URL not found in environment variable %s", ProviderOllamaBase)
 		}
 		return &OllamaClient{
 			baseURL: baseURL,
@@ -79,12 +79,13 @@ func firstNonEmpty(values ...string) string {
 }
 
 func main() {
-	provider := flag.String("provider", "", "AI provider to use (openai, ollama)")
+	var provider string
+	flag.StringVar(&provider, "provider", "", "AI provider to use (openai, anthropic, ollama)")
 	model := flag.String("model", "", "Model to use (provider-specific)")
 	flag.Parse()
 
-	if len(flag.Args()) < 1 {
-		fmt.Println("Usage: aicmd [--openai|--ollama] [--model MODEL] \"your command description\"")
+	if provider == "" || len(flag.Args()) < 1 {
+		fmt.Println("Usage: aicmd --provider <openai|anthropic|ollama> [--model MODEL] \"your command description\"")
 		os.Exit(1)
 	}
 
