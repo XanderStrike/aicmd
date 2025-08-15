@@ -1,3 +1,6 @@
+> [!TIP]
+> After using this for a few months I developed some opinions on how it should work that are better served by my new [ai-completion](https://github.com/XanderStrike/ai-completion) bash/zsh function. Consider using that instead.
+
 # aicmd
 
 use AI to generate swanky bash one-liners (supports Anthropic, OpenAI, and Ollama!)
